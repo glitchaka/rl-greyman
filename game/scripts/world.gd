@@ -12,6 +12,7 @@ var seed_value: int = 0
 var generator: DungeonGenerator
 var layouts: Dictionary = {}
 var chunks: Dictionary = {}
+var map_chunks: Dictionary = {}
 var changes: Dictionary = {}
 var explored: Dictionary = {}
 var sleeping: Dictionary = {}
@@ -54,6 +55,21 @@ func tile(p: Vector2i) -> int:
 	generate(c)
 	var local := p - c * SIZE
 	return chunks[c][local.y * SIZE + local.x]
+
+func map_tile(p: Vector2i) -> int:
+	if changes.has(p):
+		return int(changes[p])
+	var c: Vector2i = sector(p)
+	var data: PackedByteArray
+	if chunks.has(c):
+		data = chunks[c]
+	else:
+		if not map_chunks.has(c):
+			var built: Dictionary = generator.build(c)
+			map_chunks[c] = built["tiles"]
+		data = map_chunks[c]
+	var local: Vector2i = p - c * SIZE
+	return int(data[local.y * SIZE + local.x])
 
 func set_tile(p: Vector2i, value: int) -> void:
 	changes[p] = value
