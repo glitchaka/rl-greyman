@@ -3,10 +3,10 @@ extends Node2D
 const ProgressionScript = preload("res://scripts/progression.gd")
 const ENEMY_RESPAWN_INTERVAL := 8.0
 const WINDOW_DRAG_HEIGHT := 18.0
-const REGEN_INTERVAL := 30.0
-const REGEN_HUNGER_LIMIT := 35.0
-const REGEN_HUNGER_COST := 1.5
-const STARVATION_INTERVAL := 6.0
+const REGEN_INTERVAL := 45.0
+const REGEN_HUNGER_LIMIT := 25.0
+const REGEN_HUNGER_COST := 3.0
+const STARVATION_INTERVAL := 5.0
 
 var world: DungeonWorld
 var actor: Adventurer
@@ -176,6 +176,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		help_open = not help_open
 		inventory_open = false
 		character_open = false
+		map_open = false
 		return
 	if key == KEY_ESCAPE:
 		if help_open or inventory_open or character_open or map_open:
@@ -207,11 +208,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		inventory_open = not inventory_open
 		help_open = false
 		character_open = false
+		map_open = false
 		return
 	if key == KEY_C:
 		character_open = not character_open
 		inventory_open = false
 		help_open = false
+		map_open = false
 		return
 	if paused or help_open:
 		return
