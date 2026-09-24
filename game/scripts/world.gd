@@ -119,48 +119,47 @@ func maintain(p: Vector2i) -> void:
 			layouts.erase(key)
 
 func respawn_enemy(player_pos: Vector2i, visible: Dictionary) -> bool:
-	var loaded_sectors: Array = entities.keys()
-	loaded_sectors.shuffle()
-	for c in loaded_sectors:
-		if not layouts.has(c):
+	# Reponer enemigos sólo en suelo ya explorado, fuera de la vista y lejos
+	# del jugador. Mantiene el sector activo sin alterar el spawn inicial.
+	var offsets: Array[Vector2i] = [
+		Vector2i(-12, -4), Vector2i(-12, 0), Vector2i(-12, 4),
+		Vector2i(12, -4), Vector2i(12, 0), Vector2i(12, 4),
+		Vector2i(-4, -12), Vector2i(0, -12), Vector2i(4, -12),
+		Vector2i(-4, 12), Vector2i(0, 12), Vector2i(4, 12),
+		Vector2i(-9, -9), Vector2i(9, -9), Vector2i(-9, 9), Vector2i(9, 9)
+	]
+	offsets.shuffle()
+
+	for offset in offsets:
+		var spawn_pos: Vector2i = player_pos + offset
+		if visible.has(spawn_pos):
 			continue
-		var mob_count := 0
-		for e in entities[c]:
-			if e.kind == "mob":
+		if not explored.has(spawn_pos):
+			continue
+		if not walkable(spawn_pos):
+			continue
+		if not at(spawn_pos).is_empty():
+			continue
+
+		var spawn_sector: Vector2i = sector(spawn_pos)
+		var mob_count: int = 0
+		var sector_entities: Array = entities.get(spawn_sector, [])
+		for existing in sector_entities:
+			if existing.kind == "mob":
 				mob_count += 1
 		if mob_count >= RESPAWN_TARGET_PER_SECTOR:
 			continue
-		var candidates: Array[Vector2i] = []
-		var rooms: Array = layouts[c].rooms
-		for i in range(rooms.size()):
-			if c == Vector2i.ZERO and i == 0:
-				continue
-			var room: Rect2i = rooms[i]
-			var center := c * SIZE + room.get_center()
-			candidates.append(center + Vector2i(-2, 1))
-			candidates.append(center + Vector2i(2, -1))
-			candidates.append(center + Vector2i(0, 2))
-		candidates.shuffle()
-		for p in candidates:
-			if not explored.has(p) or visible.has(p):
-				continue
-			if (p - player_pos).length_squared() < 64 or not walkable(p):
-				continue
-			var blocked := false
-			for e in at(p):
-				if e.kind not in ["item", "trap"]:
-					blocked = true
-					break
-			if blocked:
-				continue
-			respawn_serial += 1
-			var names := ["rata", "slime", "esqueleto"]
-			var name: String = names[noise(p, 700 + respawn_serial) % names.size()]
-			var mob := make_entity("mob", p, name)
-			mob.hp = 12 if name == "esqueleto" else 8
-			mob.clock = 0.5 + float(noise(p, 800 + respawn_serial) % 70) / 100.0
-			entities[c].append(mob)
-			return true
+
+		respawn_serial += 1
+		var enemy_names: Array[String] = ["rata", "slime", "esqueleto"]
+		var enemy_index: int = noise(spawn_pos, 700 + respawn_serial) % enemy_names.size()
+		var enemy_name: String = enemy_names[enemy_index]
+		var mob: Dictionary = make_entity("mob", spawn_pos, enemy_name)
+		mob.hp = 12 if enemy_name == "esqueleto" else 8
+		mob.clock = 0.5 + float(noise(spawn_pos, 800 + respawn_serial) % 70) / 100.0
+		entities[spawn_sector].append(mob)
+		return true
+
 	return false
 
 func clear_line(a: Vector2i, b: Vector2i) -> bool:
