@@ -31,7 +31,7 @@ func move(dir: Vector2i, automatic: bool = false) -> bool:
 		if e.kind in ["barrel", "urn", "crate", "chest", "fountain"]:
 			return false
 	actor.pos = target
-	actor.spend_energy(Adventurer.MOVE_HUNGER_COST)
+	actor.spend_energy(actor.movement_energy_cost())
 	actor.moving = true
 	actor.walk_animation_time = actor.step_clock + 0.025
 	actor.visits[target] = actor.visits.get(target, 0) + 1
@@ -237,16 +237,16 @@ func tick_enemies(delta: float, visible: Dictionary) -> void:
 			if e.clock > 0:
 				continue
 			match e.name:
-				"rata": e.clock = 0.65
-				"slime": e.clock = 0.90
-				_: e.clock = 0.80
+				"rata": e.clock = 0.60
+				"slime": e.clock = 0.85
+				_: e.clock = 0.75
 			var diff: Vector2i = actor.pos - e.pos
 			if absi(diff.x) + absi(diff.y) == 1:
 				var attack_damage := 4
 				if e.name == "slime":
-					attack_damage = 5
+					attack_damage = 6
 				elif e.name == "esqueleto":
-					attack_damage = 7
+					attack_damage = 9
 				hurt(attack_damage)
 				continue
 			if not world.clear_line(e.pos, actor.pos):
