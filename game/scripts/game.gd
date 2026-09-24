@@ -2,6 +2,7 @@ extends Node2D
 
 const ProgressionScript = preload("res://scripts/progression.gd")
 const ENEMY_RESPAWN_INTERVAL := 8.0
+const WINDOW_DRAG_HEIGHT := 18.0
 
 var world: DungeonWorld
 var actor: Adventurer
@@ -27,6 +28,7 @@ var last_fov_revision := -1
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	DisplayServer.window_set_title("Dungeon Living — revisión 3")
+	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, true)
 	start(false)
 	view = DungeonView.new()
 	view.game = self
@@ -136,6 +138,9 @@ func input_direction() -> Vector2i:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.position.y <= WINDOW_DRAG_HEIGHT:
+			DisplayServer.window_start_drag()
+			return
 		actor.controlled()
 		if inventory_open:
 			view.inventory_click(get_global_mouse_position())
