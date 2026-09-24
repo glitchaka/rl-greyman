@@ -13,7 +13,7 @@ func save_game(world: DungeonWorld, actor: Adventurer) -> bool:
 	file.store_var({"version": 1, "terrain_revision": DungeonGenerator.REVISION, "seed": world.seed_value, "changes": world.changes,
 		"explored": world.explored, "entities": entity_state, "pos": actor.pos,
 		"hp": actor.hp, "hunger": actor.hunger, "items": actor.inventory.items,
-		"equipment": actor.inventory.equipment, "visits": actor.visits,
+		"gold_count": actor.inventory.gold_count, "equipment": actor.inventory.equipment, "visits": actor.visits,
 		"progression": actor.progression.serialize(), "capacity": actor.inventory.capacity})
 	file.close()
 	return DirAccess.rename_absolute(path + ".tmp", path) == OK
