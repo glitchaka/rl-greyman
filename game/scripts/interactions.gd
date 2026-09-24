@@ -31,6 +31,7 @@ func move(dir: Vector2i, automatic: bool = false) -> bool:
 		if e.kind in ["barrel", "urn", "crate", "chest", "fountain"]:
 			return false
 	actor.pos = target
+	actor.spend_energy(Adventurer.MOVE_HUNGER_COST)
 	actor.moving = true
 	actor.walk_animation_time = actor.step_clock + 0.025
 	actor.visits[target] = actor.visits.get(target, 0) + 1
@@ -108,6 +109,7 @@ func attack() -> void:
 	if actor.attack_clock > 0:
 		return
 	actor.attack_clock = actor.progression.attack_interval()
+	actor.spend_energy(Adventurer.ATTACK_HUNGER_COST)
 	var p := actor.pos + actor.facing
 	var held := actor.inventory.equipped("Mano")
 	for e in world.at(p):
@@ -193,10 +195,14 @@ func use_item() -> void:
 			message.emit("Tu mochila ya tiene la capacidad máxima.")
 		return
 	if nutrition > 0 or healing > 0:
+		var old_hp: int = actor.hp
+		var old_hunger: float = actor.hunger
 		actor.hp = mini(actor.max_hp(), actor.hp + healing)
-		actor.hunger = minf(100, actor.hunger + nutrition)
+		actor.hunger = maxf(0.0, actor.hunger - float(nutrition))
 		inv.erase(inv.selected)
-		message.emit("Consumes %s: +%d vida, +%d alimento." % [name, healing, nutrition])
+		var healed := actor.hp - old_hp
+		var hunger_reduced := roundi(old_hunger - actor.hunger)
+		message.emit("Consumes %s: hambre -%d, vida +%d." % [name, hunger_reduced, healed])
 	else:
 		message.emit("Equípalo con Enter; elige ranura con Tab.")
 
@@ -230,10 +236,18 @@ func tick_enemies(delta: float, visible: Dictionary) -> void:
 			e.clock -= delta
 			if e.clock > 0:
 				continue
-			e.clock = 0.85 if e.name == "rata" else 1.15
+			match e.name:
+				"rata": e.clock = 0.65
+				"slime": e.clock = 0.90
+				_: e.clock = 0.80
 			var diff: Vector2i = actor.pos - e.pos
 			if absi(diff.x) + absi(diff.y) == 1:
-				hurt(4 if e.name == "esqueleto" else 2)
+				var attack_damage := 4
+				if e.name == "slime":
+					attack_damage = 5
+				elif e.name == "esqueleto":
+					attack_damage = 7
+				hurt(attack_damage)
 				continue
 			if not world.clear_line(e.pos, actor.pos):
 				continue
