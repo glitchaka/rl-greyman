@@ -171,7 +171,7 @@ func respawn_enemy(player_pos: Vector2i, visible: Dictionary) -> bool:
 		var enemy_index: int = noise(spawn_pos, 700 + respawn_serial) % enemy_names.size()
 		var enemy_name: String = enemy_names[enemy_index]
 		var mob: Dictionary = make_entity("mob", spawn_pos, enemy_name)
-		mob.hp = 12 if enemy_name == "esqueleto" else 8
+		mob.hp = 10 if enemy_name == "rata" else (14 if enemy_name == "slime" else 18)
 		mob.clock = 0.5 + float(noise(spawn_pos, 800 + respawn_serial) % 70) / 100.0
 		entities[spawn_sector].append(mob)
 		return true
