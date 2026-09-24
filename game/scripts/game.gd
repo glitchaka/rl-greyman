@@ -16,6 +16,8 @@ var particles: Array = []
 var inventory_open := false
 var help_open := false
 var character_open := false
+var minimap_open := false
+var map_open := false
 var character_selection := 0
 var paused := false
 var save_clock := 0.0
@@ -61,6 +63,8 @@ func start(fresh: bool, seed_override: int = -1) -> void:
 	inventory_open = false
 	help_open = false
 	character_open = false
+	minimap_open = false
+	map_open = false
 	paused = false
 	enemy_respawn_clock = 0.0
 	log_message("La expedición continúa." if not data.is_empty() else "Despiertas bajo la piedra. No estás solo.")
@@ -77,7 +81,7 @@ func add_effect(p: Vector2i, text: String, color: Color) -> void:
 	particles.append({"pos": p, "text": text, "color": color, "time": 0.8})
 
 func _process(delta: float) -> void:
-	if not paused and not inventory_open and not help_open and not character_open and actor.hp > 0:
+	if not paused and not inventory_open and not help_open and not character_open and not map_open and actor.hp > 0:
 		actor.tick(delta)
 		var dir := input_direction()
 		if dir != Vector2i.ZERO:
@@ -141,6 +145,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.position.y <= WINDOW_DRAG_HEIGHT:
 			DisplayServer.window_start_drag()
 			return
+		if map_open:
+			return
 		actor.controlled()
 		if inventory_open:
 			view.inventory_click(get_global_mouse_position())
@@ -157,15 +163,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		character_open = false
 		return
 	if key == KEY_ESCAPE:
-		if help_open or inventory_open or character_open:
+		if help_open or inventory_open or character_open or map_open:
 			help_open = false
 			inventory_open = false
 			character_open = false
+			map_open = false
 		else:
 			paused = not paused
 		return
 	if key == KEY_F5:
 		log_message("Expedición guardada." if saves.save_game(world, actor) else "No se pudo guardar la expedición.")
+		return
+	if key == KEY_O:
+		minimap_open = not minimap_open
+		return
+	if key == KEY_M:
+		map_open = not map_open
+		if map_open:
+			inventory_open = false
+			help_open = false
+			character_open = false
 		return
 	if actor.hp <= 0:
 		if key == KEY_R:
