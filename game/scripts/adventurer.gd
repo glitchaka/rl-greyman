@@ -3,9 +3,10 @@ extends RefCounted
 
 const ProgressionScript = preload("res://scripts/progression.gd")
 const GreyManAnimationScript = preload("res://scripts/greyman_animation.gd")
-const BASAL_HUNGER_PER_SECOND := 0.02
-const MOVE_HUNGER_COST := 0.015
-const ATTACK_HUNGER_COST := 0.12
+const BASAL_HUNGER_PER_SECOND := 0.05
+const MOVE_HUNGER_BASE_COST := 0.025
+const MOVE_HUNGER_WEIGHT_FACTOR := 0.0015
+const ATTACK_HUNGER_COST := 0.18
 
 var pos := Vector2i(16, 16)
 var visual := Vector2(16, 16)
@@ -63,6 +64,9 @@ func buy_backpack_upgrade() -> bool:
 
 func spend_energy(amount: float) -> void:
 	hunger = clampf(hunger + maxf(0.0, amount), 0.0, 100.0)
+
+func movement_energy_cost() -> float:
+	return MOVE_HUNGER_BASE_COST + float(inventory.weight()) * MOVE_HUNGER_WEIGHT_FACTOR
 
 func controlled() -> void:
 	idle_time = 0.0
