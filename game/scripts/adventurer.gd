@@ -1,6 +1,9 @@
 class_name Adventurer
 extends RefCounted
 
+const ProgressionScript = preload("res://scripts/progression.gd")
+const GreyManAnimationScript = preload("res://scripts/greyman_animation.gd")
+
 var pos := Vector2i(16, 16)
 var visual := Vector2(16, 16)
 var facing := Vector2i.DOWN
@@ -16,12 +19,12 @@ var autonomous: bool = false
 var auto_path: Array[Vector2i] = []
 var visits: Dictionary = {}
 var inventory := DungeonInventory.new()
-var progression := AdventurerProgression.new()
-var animation := GreyManAnimation.new()
+var progression := ProgressionScript.new()
+var animation := GreyManAnimationScript.new()
 var walk_animation_time := 0.0
 
 func direction_row() -> int:
-	return GreyManAnimation.DIRECTION_ROW.get(facing, 2)
+	return GreyManAnimationScript.DIRECTION_ROW.get(facing, 2)
 
 func sprite_region() -> Rect2:
 	animation.advance(0, moving, attack_clock > 0)
