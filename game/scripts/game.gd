@@ -42,8 +42,7 @@ func start(fresh: bool, seed_override: int = -1) -> void:
 		actor.visual = Vector2(actor.pos)
 		actor.hp = data.hp
 		actor.hunger = data.hunger
-		actor.inventory.items = data.items
-		actor.inventory.equipment = data.equipment
+		actor.inventory.restore(data.items, data.equipment, int(data.get("gold_count", 0)))
 		actor.inventory.capacity = clampi(int(data.get("capacity", 16)), 16, DungeonInventory.MAX_CAPACITY)
 		actor.progression.restore(data.get("progression", {}))
 		actor.hp = clampi(actor.hp, 0, actor.max_hp())
