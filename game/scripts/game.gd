@@ -3,6 +3,10 @@ extends Node2D
 const ProgressionScript = preload("res://scripts/progression.gd")
 const ENEMY_RESPAWN_INTERVAL := 8.0
 const WINDOW_DRAG_HEIGHT := 18.0
+const REGEN_INTERVAL := 30.0
+const REGEN_HUNGER_LIMIT := 35.0
+const REGEN_HUNGER_COST := 1.5
+const STARVATION_INTERVAL := 6.0
 
 var world: DungeonWorld
 var actor: Adventurer
@@ -22,6 +26,7 @@ var character_selection := 0
 var paused := false
 var save_clock := 0.0
 var survival_clock := 0.0
+var regen_clock := 0.0
 var enemy_respawn_clock := 0.0
 var auto_enabled := true
 var last_fov_pos := Vector2i(2147483647, 2147483647)
@@ -67,6 +72,8 @@ func start(fresh: bool, seed_override: int = -1) -> void:
 	map_open = false
 	paused = false
 	enemy_respawn_clock = 0.0
+	regen_clock = 0.0
+	survival_clock = 0.0
 	log_message("La expedición continúa." if not data.is_empty() else "Despiertas bajo la piedra. No estás solo.")
 	log_message("[E] Recoger · [I] Equipo · [C] Atributos y mochila")
 	if data.get("layout_migrated", false):
@@ -111,13 +118,21 @@ func _process(delta: float) -> void:
 		if enemy_respawn_clock >= ENEMY_RESPAWN_INTERVAL:
 			enemy_respawn_clock = 0.0
 			world.respawn_enemy(actor.pos, visible_tiles)
-		survival_clock += delta
-		if survival_clock > 8:
-			survival_clock = 0
-			if actor.hunger <= 0:
-				interactions.hurt(1)
-			elif actor.hunger > 65:
+		if actor.hunger >= 100.0:
+			survival_clock += delta
+			if survival_clock >= STARVATION_INTERVAL:
+				survival_clock = 0.0
+				interactions.hurt(2)
+		else:
+			survival_clock = 0.0
+		if actor.hp < actor.max_hp() and actor.hunger <= REGEN_HUNGER_LIMIT and not actor.moving:
+			regen_clock += delta
+			if regen_clock >= REGEN_INTERVAL:
+				regen_clock = 0.0
 				actor.hp = mini(actor.max_hp(), actor.hp + 1)
+				actor.hunger = minf(100.0, actor.hunger + REGEN_HUNGER_COST)
+		else:
+			regen_clock = 0.0
 		save_clock += delta
 		if save_clock > 20:
 			save_clock = 0
