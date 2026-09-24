@@ -22,12 +22,60 @@ var equipment: Dictionary = {"Mano": -1, "Cabeza": -1, "Cuerpo": -1, "Secundaria
 var selected: int = 0
 var active_slot: int = 0
 var capacity := 16
+var gold_count := 0
 
 func add(name: String) -> bool:
-	if not CATALOG.has(name) or items.size() >= capacity:
+	if not CATALOG.has(name):
+		return false
+	if name == "oro":
+		var gold_index := items.find("oro")
+		if gold_index >= 0:
+			gold_count += 1
+			return true
+		if items.size() >= capacity:
+			return false
+		items.append(name)
+		gold_count = 1
+		return true
+	if items.size() >= capacity:
 		return false
 	items.append(name)
 	return true
+
+func restore(saved_items: Array, saved_equipment: Dictionary, saved_gold_count: int = 0) -> void:
+	items.clear()
+	equipment = {"Mano": -1, "Cabeza": -1, "Cuerpo": -1, "Secundaria": -1}
+	gold_count = 0
+	var index_map: Dictionary = {}
+	var gold_index := -1
+	for old_index in range(saved_items.size()):
+		var name := str(saved_items[old_index])
+		if not CATALOG.has(name):
+			continue
+		if name == "oro":
+			if gold_index < 0:
+				gold_index = items.size()
+				items.append("oro")
+			index_map[old_index] = gold_index
+			gold_count += 1
+		else:
+			index_map[old_index] = items.size()
+			items.append(name)
+	if saved_gold_count > gold_count:
+		gold_count = saved_gold_count
+		if gold_index < 0:
+			gold_index = items.size()
+			items.append("oro")
+	for slot in SLOT_NAMES:
+		var old_equipped := int(saved_equipment.get(slot, -1))
+		if index_map.has(old_equipped):
+			equipment[slot] = int(index_map[old_equipped])
+	selected = clampi(selected, 0, maxi(0, items.size() - 1))
+
+func stack_count(index: int) -> int:
+	if index < 0 or index >= items.size():
+		return 0
+	return gold_count if items[index] == "oro" else 1
 
 func expand() -> bool:
 	if capacity >= MAX_CAPACITY:
@@ -59,6 +107,11 @@ func erase(index: int) -> String:
 	if index < 0 or index >= items.size():
 		return ""
 	var name: String = items[index]
+	if name == "oro" and gold_count > 1:
+		gold_count -= 1
+		return name
+	if name == "oro":
+		gold_count = 0
 	items.remove_at(index)
 	for slot in equipment:
 		if equipment[slot] == index:
@@ -85,6 +138,7 @@ func mining_power() -> int:
 
 func weight() -> int:
 	var total := 0
-	for name in items:
-		total += CATALOG[name].weight
+	for i in range(items.size()):
+		var name: String = items[i]
+		total += int(CATALOG[name].weight) * stack_count(i)
 	return total
