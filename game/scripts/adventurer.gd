@@ -3,12 +3,15 @@ extends RefCounted
 
 const ProgressionScript = preload("res://scripts/progression.gd")
 const GreyManAnimationScript = preload("res://scripts/greyman_animation.gd")
+const BASAL_HUNGER_PER_SECOND := 0.02
+const MOVE_HUNGER_COST := 0.015
+const ATTACK_HUNGER_COST := 0.12
 
 var pos := Vector2i(16, 16)
 var visual := Vector2(16, 16)
 var facing := Vector2i.DOWN
 var hp: int = 40
-var hunger: float = 100.0
+var hunger: float = 0.0
 var idle_time: float = 0.0
 var step_clock: float = 0.0
 var attack_clock: float = 0.0
@@ -58,6 +61,9 @@ func buy_backpack_upgrade() -> bool:
 	inventory.expand()
 	return true
 
+func spend_energy(amount: float) -> void:
+	hunger = clampf(hunger + maxf(0.0, amount), 0.0, 100.0)
+
 func controlled() -> void:
 	idle_time = 0.0
 	autonomous = false
@@ -73,6 +79,6 @@ func tick(delta: float) -> void:
 	walk_animation_time = maxf(0, walk_animation_time - delta)
 	moving = visual.distance_to(Vector2(pos)) > 0.02 or walk_animation_time > 0
 	animation.advance(delta, moving, attack_clock > 0)
-	hunger = maxf(0, hunger - delta * 0.035)
+	hunger = minf(100.0, hunger + delta * BASAL_HUNGER_PER_SECOND)
 	if idle_time >= 5.0:
 		autonomous = true
