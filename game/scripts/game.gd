@@ -1,5 +1,7 @@
 extends Node2D
 
+const ProgressionScript = preload("res://scripts/progression.gd")
+
 var world: DungeonWorld
 var actor: Adventurer
 var interactions: DungeonInteractions
@@ -216,7 +218,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func upgrade_selected() -> void:
 	if character_selection < 3:
-		var attribute: String = AdventurerProgression.ATTRIBUTES[character_selection]
+		var attribute: String = ProgressionScript.ATTRIBUTES[character_selection]
 		log_message(attribute + " +1." if actor.improve(attribute) else "Necesitas puntos de nivel. Lee manuales o gana XP.")
 	else:
 		log_message("Mochila ampliada a %d espacios." % actor.inventory.capacity if actor.buy_backpack_upgrade() else "No tienes monedas suficientes o la mochila está al máximo.")
