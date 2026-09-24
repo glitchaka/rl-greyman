@@ -8,6 +8,11 @@ const TEXT := Color("ced1cc")
 const MUTED := Color("77838a")
 const GOLD := Color("d1ab6b")
 const TEAL := Color("72b6a2")
+const MAP_WALL := Color("4a5260")
+const MAP_FLOOR := Color("b7b2a4")
+const MAP_DOOR := Color("d1ab6b")
+const MAP_PLAYER := Color("72b6a2")
+const MAP_ENEMY := Color("c86d68")
 var game: Node2D
 var tiles := preload("res://assets/PNG/walls_floor.png")
 var objects := preload("res://assets/PNG/Objects.png")
@@ -43,11 +48,15 @@ func _draw() -> void:
 	draw_rect(Rect2(0, 0, 480, 300), INK)
 	draw_world()
 	draw_hud()
+	if game.minimap_open and not game.map_open:
+		draw_minimap()
 	if game.inventory_open:
 		draw_inventory()
 	if game.help_open:
 		draw_help()
-	if game.paused and not game.help_open and not game.inventory_open:
+	if game.map_open:
+		draw_full_map()
+	if game.paused and not game.help_open and not game.inventory_open and not game.map_open:
 		box(Rect2(85, 100, 184, 58))
 		label_at(Vector2(142, 121), "EN PAUSA", GOLD, 12)
 		label_at(Vector2(105, 144), "Esc para continuar", MUTED)
@@ -56,6 +65,90 @@ func _draw() -> void:
 		label_at(Vector2(90, 117), "LA PIEDRA TE RECLAMA", GOLD, 13)
 		label_at(Vector2(83, 138), "Tu expedición ha terminado.", MUTED)
 		label_at(Vector2(83, 158), "[R] Nueva semilla y aventura", TEXT)
+
+func map_tile_color(tile: int) -> Color:
+	match tile:
+		DungeonWorld.WALL, DungeonWorld.SECRET:
+			return MAP_WALL
+		DungeonWorld.DOOR:
+			return MAP_DOOR
+		DungeonWorld.OPEN:
+			return MAP_DOOR.darkened(0.25)
+		_:
+			return MAP_FLOOR
+
+func draw_minimap() -> void:
+	var panel := Rect2(367, 20, 107, 107)
+	draw_rect(panel, Color(0.03, 0.04, 0.06, 0.92))
+	draw_rect(panel, EDGE, false, 1.0)
+	var radius := 15
+	var cell := 3.0
+	var center := panel.position + Vector2(53.5, 53.5)
+	for y in range(-radius, radius + 1):
+		for x in range(-radius, radius + 1):
+			var p: Vector2i = game.actor.pos + Vector2i(x, y)
+			if not game.world.explored.has(p):
+				continue
+			var tile: int = game.world.map_tile(p)
+			var dest := center + Vector2(x * cell, y * cell) - Vector2(cell * 0.5, cell * 0.5)
+			draw_rect(Rect2(dest, Vector2(cell, cell)), map_tile_color(tile))
+	for list in game.world.entities.values():
+		for entity in list:
+			if entity.kind != "mob" or not game.visible_tiles.has(entity.pos):
+				continue
+			var offset: Vector2i = entity.pos - game.actor.pos
+			if absi(offset.x) > radius or absi(offset.y) > radius:
+				continue
+			var enemy_pos := center + Vector2(offset.x * cell, offset.y * cell)
+			draw_rect(Rect2(enemy_pos - Vector2.ONE, Vector2(2, 2)), MAP_ENEMY)
+	draw_rect(Rect2(center - Vector2(2, 2), Vector2(5, 5)), MAP_PLAYER)
+	label_at(panel.position + Vector2(5, 11), "O", GOLD, 8)
+
+func explored_bounds() -> Rect2i:
+	var min_x: int = game.actor.pos.x
+	var max_x: int = game.actor.pos.x
+	var min_y: int = game.actor.pos.y
+	var max_y: int = game.actor.pos.y
+	for key in game.world.explored.keys():
+		var p: Vector2i = key
+		min_x = mini(min_x, p.x)
+		max_x = maxi(max_x, p.x)
+		min_y = mini(min_y, p.y)
+		max_y = maxi(max_y, p.y)
+	return Rect2i(Vector2i(min_x, min_y), Vector2i(max_x - min_x + 1, max_y - min_y + 1))
+
+func draw_full_map() -> void:
+	var panel := Rect2(12, 20, 456, 235)
+	draw_rect(panel, Color(0.025, 0.03, 0.045, 0.97))
+	draw_rect(panel, EDGE, false, 1.0)
+	label_at(Vector2(24, 37), "MAPA EXPLORADO", GOLD, 11)
+	label_at(Vector2(366, 37), "[M] Cerrar", MUTED, 8)
+	var area := Rect2(22, 45, 436, 200)
+	var bounds: Rect2i = explored_bounds()
+	var width := maxi(1, bounds.size.x)
+	var height := maxi(1, bounds.size.y)
+	var cell := minf(area.size.x / float(width), area.size.y / float(height))
+	cell = minf(cell, 6.0)
+	var map_size := Vector2(float(width) * cell, float(height) * cell)
+	var origin := area.position + (area.size - map_size) * 0.5
+	for key in game.world.explored.keys():
+		var p: Vector2i = key
+		var tile: int = game.world.map_tile(p)
+		var local := Vector2(p.x - bounds.position.x, p.y - bounds.position.y)
+		var dest := origin + local * cell
+		draw_rect(Rect2(dest, Vector2(cell, cell)), map_tile_color(tile))
+	var actor_local := Vector2(game.actor.pos.x - bounds.position.x, game.actor.pos.y - bounds.position.y)
+	var actor_center := origin + (actor_local + Vector2(0.5, 0.5)) * cell
+	var marker := maxf(3.0, cell * 1.8)
+	draw_rect(Rect2(actor_center - Vector2(marker, marker) * 0.5, Vector2(marker, marker)), MAP_PLAYER)
+	for list in game.world.entities.values():
+		for entity in list:
+			if entity.kind != "mob" or not game.visible_tiles.has(entity.pos):
+				continue
+			var mob_local := Vector2(entity.pos.x - bounds.position.x, entity.pos.y - bounds.position.y)
+			var mob_center := origin + (mob_local + Vector2(0.5, 0.5)) * cell
+			var mob_marker := maxf(2.0, cell * 1.2)
+			draw_rect(Rect2(mob_center - Vector2(mob_marker, mob_marker) * 0.5, Vector2(mob_marker, mob_marker)), MAP_ENEMY)
 
 func draw_world() -> void:
 	terrain.draw(game)
@@ -240,6 +333,7 @@ func draw_help() -> void:
 		"I                Mochila. ↑↓ objeto, Tab ranura, Enter equipar.",
 		"U / G            Consumir / soltar el objeto elegido (en mochila).",
 		"Q                Activar o desactivar autonomía tras 5 s sin jugar.",
+		"O / M            Minimapa / mapa completo.",
 		"F5 / Esc         Guardar / pausar. También se guarda al salir.",
 		"",
 		"Un casco en la mano golpea. En la cabeza protege.",
