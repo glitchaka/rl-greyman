@@ -277,8 +277,8 @@ func draw_hud() -> void:
 	label_at(Vector2(124, 276), "HAMBRE %02d%%" % roundi(actor.hunger), Color("b6b29a"), 9)
 	var held := actor.inventory.equipped("Mano")
 	label_at(Vector2(194, 276), "Mano: " + ("libre" if held.is_empty() else held), TEXT, 9)
-	label_at(Vector2(292, 276), "ATQ %d  DEF %d" % [actor.inventory.damage(), actor.inventory.armor()], MUTED, 9)
-	label_at(Vector2(388, 276), "I Equipo  F1 Ayuda", GOLD, 8)
+	label_at(Vector2(292, 276), "ATQ %d  DEF %d" % [actor.damage(), actor.armor()], MUTED, 9)
+	label_at(Vector2(388, 276), "I Equipo  C Stats", GOLD, 8)
 	if not game.messages.is_empty():
 		label_at(Vector2(8, 290), game.messages.back(), Color("a8a3a1"), 9)
 	var state := "AUTO" if actor.autonomous and game.auto_enabled else "MANUAL"
@@ -371,24 +371,18 @@ func draw_help() -> void:
 	box(Rect2(28, 36, 424, 216))
 	label_at(Vector2(42, 55), "MANUAL DEL ERRANTE", GOLD, 12)
 	var lines := [
-		"WASD / Flechas   Caminar; chocar con un enemigo lo ataca.",
+		"WASD / Flechas   Caminar.",
 		"E                Recoger, abrir/cerrar, empujar, beber, desarmar.",
-		"ESPACIO          Atacar de frente. Con pico: excavar (3 golpes).",
-		"X                Examinar alrededor: puertas secretas y trampas.",
-		"I                Mochila. ↑↓ objeto, Tab ranura, Enter equipar.",
-		"C                Atributos. Usa puntos de nivel para mejorarlos.",
-		"U / G            Consumir / soltar el objeto elegido (en mochila).",
-		"Q                Activar o desactivar autonomía tras 5 s sin jugar.",
+		"ESPACIO          Atacar de frente. Con pico: excavar.",
+		"X                Examinar alrededor.",
+		"I                Mochila / equipo.",
+		"C                Atributos y puntos de nivel.",
+		"U / G            Consumir / soltar.",
+		"Q                Activar o desactivar autonomía.",
 		"O / M            Minimapa / mapa completo.",
-		"F5 / Esc         Guardar / pausar. También se guarda al salir.",
-		"",
-		"El hambre aumenta con el tiempo, al caminar y al combatir.",
-		"La comida reduce hambre aunque tengas la vida completa.",
-		"Solo regeneras descansando, bien alimentado, y muy lentamente.",
-		"Tu visión llega 6 tiles. Lo visto queda en la memoria del mapa.",
-		"La autonomía se detiene si ve enemigos."
+		"F5 / Esc         Guardar / pausar."
 	]
 	for i in range(lines.size()):
-		label_at(Vector2(42, 73 + i * 10), lines[i], MUTED if i >= 11 else TEXT, 8)
+		label_at(Vector2(42, 73 + i * 12), lines[i], TEXT, 8)
 	label_at(Vector2(42, 242), "[F1 / Esc] Volver a la expedición", GOLD, 9)
 
