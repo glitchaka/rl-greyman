@@ -1,6 +1,7 @@
 extends Node2D
 
 const ProgressionScript = preload("res://scripts/progression.gd")
+const ENEMY_RESPAWN_INTERVAL := 8.0
 
 var world: DungeonWorld
 var actor: Adventurer
@@ -18,6 +19,7 @@ var character_selection := 0
 var paused := false
 var save_clock := 0.0
 var survival_clock := 0.0
+var enemy_respawn_clock := 0.0
 var auto_enabled := true
 var last_fov_pos := Vector2i(2147483647, 2147483647)
 var last_fov_revision := -1
@@ -58,6 +60,7 @@ func start(fresh: bool, seed_override: int = -1) -> void:
 	help_open = false
 	character_open = false
 	paused = false
+	enemy_respawn_clock = 0.0
 	log_message("La expedición continúa." if not data.is_empty() else "Despiertas bajo la piedra. No estás solo.")
 	log_message("[E] Recoger · [I] Equipo · [C] Atributos y mochila")
 	if data.get("layout_migrated", false):
@@ -98,6 +101,10 @@ func _process(delta: float) -> void:
 			last_fov_pos = actor.pos
 			last_fov_revision = world.revision
 		interactions.tick_enemies(delta, visible_tiles)
+		enemy_respawn_clock += delta
+		if enemy_respawn_clock >= ENEMY_RESPAWN_INTERVAL:
+			enemy_respawn_clock = 0.0
+			world.respawn_enemy(actor.pos, visible_tiles)
 		survival_clock += delta
 		if survival_clock > 8:
 			survival_clock = 0
