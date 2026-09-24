@@ -12,6 +12,7 @@ window/size/viewport_width=480
 window/size/viewport_height=300
 window/size/window_width_override=960
 window/size/window_height_override=600
+window/size/borderless=true
 window/stretch/mode="canvas_items"
 window/stretch/scale_mode="integer"
 
