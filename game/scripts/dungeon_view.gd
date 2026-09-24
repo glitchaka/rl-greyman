@@ -192,7 +192,7 @@ func draw_inventory() -> void:
 	box(Rect2(32, 34, 416, 222))
 	label_at(Vector2(44, 52), "MOCHILA / EQUIPAMIENTO LIBRE", GOLD, 12)
 	var inv: DungeonInventory = game.actor.inventory
-	label_at(Vector2(44, 66), "%d/16 objetos · peso %d  |  Simulación pausada" % [inv.items.size(), inv.weight()], MUTED, 9)
+	label_at(Vector2(44, 66), "%d/%d espacios · peso %d  |  Simulación pausada" % [inv.items.size(), inv.capacity, inv.weight()], MUTED, 9)
 	for i in range(inv.items.size()):
 		var col := i / 8
 		var row := i % 8
@@ -201,7 +201,8 @@ func draw_inventory() -> void:
 			draw_rect(Rect2(p, Vector2(108, 17)), Color("303a44"))
 		draw_item(inv.items[i], p)
 		var marker := "*" if inv.equipment.values().has(i) else ""
-		label_at(p + Vector2(19, 12), inv.items[i].capitalize() + marker, TEXT, 9)
+		var stack := " x%d" % inv.stack_count(i) if inv.stack_count(i) > 1 else ""
+		label_at(p + Vector2(19, 12), inv.items[i].capitalize() + stack + marker, TEXT, 9)
 	if inv.items.is_empty():
 		label_at(Vector2(48, 95), "Vacía. [E] recoge objetos.", MUTED, 9)
 	for i in range(4):
