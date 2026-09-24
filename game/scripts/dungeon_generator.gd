@@ -118,7 +118,7 @@ func build(c: Vector2i) -> Dictionary:
 		entities.append(entity("item", nw + Vector2i(3, 1), "oro"))
 		if c != Vector2i.ZERO or i != 0:
 			var mob := entity("mob", origin + area.get_center() + Vector2i(2, 2), ["rata", "slime", "esqueleto"][rng.randi_range(0, 2)])
-			mob.hp = 12 if mob.name == "esqueleto" else 8
+			mob.hp = 10 if mob.name == "rata" else (14 if mob.name == "slime" else 18)
 			mob.clock = rng.randf_range(0.3, 1.2)
 			entities.append(mob)
 			entities.append(entity("item", origin + area.get_center(), ["espada", "pan", "poción", "escudo", "casco"][rng.randi_range(0, 4)]))
