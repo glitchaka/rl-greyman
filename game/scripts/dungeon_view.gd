@@ -52,6 +52,8 @@ func _draw() -> void:
 		draw_minimap()
 	if game.inventory_open:
 		draw_inventory()
+	if game.character_open:
+		draw_character()
 	if game.help_open:
 		draw_help()
 	if game.map_open:
@@ -268,10 +270,11 @@ func draw_hud() -> void:
 	draw_rect(Rect2(0, 263, 480, 37), Color("181720"))
 	draw_line(Vector2(0, 263), Vector2(480, 263), Color("514752"))
 	draw_line(Vector2(0, 264), Vector2(480, 264), Color("292631"))
-	label_at(Vector2(8, 276), "VIDA %02d/40" % actor.hp, Color("ce9390"), 9)
-	draw_rect(Rect2(68, 269, 40, 5), Color("342630"))
-	draw_rect(Rect2(68, 269, actor.hp, 5), Color("9f626d"))
-	label_at(Vector2(119, 276), "COMIDA %d" % actor.hunger, Color("b6b29a"), 9)
+	label_at(Vector2(8, 276), "VIDA %02d/%02d" % [actor.hp, actor.max_hp()], Color("ce9390"), 9)
+	draw_rect(Rect2(76, 269, 40, 5), Color("342630"))
+	var hp_width := 40.0 * float(actor.hp) / float(maxi(1, actor.max_hp()))
+	draw_rect(Rect2(76, 269, hp_width, 5), Color("9f626d"))
+	label_at(Vector2(124, 276), "HAMBRE %02d%%" % roundi(actor.hunger), Color("b6b29a"), 9)
 	var held := actor.inventory.equipped("Mano")
 	label_at(Vector2(194, 276), "Mano: " + ("libre" if held.is_empty() else held), TEXT, 9)
 	label_at(Vector2(292, 276), "ATQ %d  DEF %d" % [actor.inventory.damage(), actor.inventory.armor()], MUTED, 9)
@@ -312,6 +315,48 @@ func draw_inventory() -> void:
 	label_at(Vector2(44, 237), "↑↓ Objeto  TAB Ranura  ENTER Equipar  U Consumir  G Soltar", GOLD, 9)
 	label_at(Vector2(44, 249), "Clic: elegir objeto o ranura                              I Cerrar", MUTED, 8)
 
+func draw_character() -> void:
+	draw_rect(Rect2(0, 28, 480, 228), Color(0.02, 0.03, 0.05, 0.90))
+	box(Rect2(46, 38, 388, 208))
+	var progression = game.actor.progression
+	label_at(Vector2(60, 57), "ATRIBUTOS DEL ERRANTE", GOLD, 12)
+	label_at(Vector2(60, 72), "Nivel %d   XP %d/%d   Puntos %d" % [progression.level, progression.xp, progression.xp_required(), progression.points], TEXT, 9)
+	label_at(Vector2(60, 84), "Monedas %d   Bajas %d" % [progression.coins, progression.kills], MUTED, 8)
+
+	var names := ["FUERZA", "VITALIDAD", "AGILIDAD"]
+	var values := [progression.strength, progression.vitality, progression.agility]
+	var descriptions := [
+		"Daño físico: +1 por punto.",
+		"Vida máxima: +8 por punto; defensa cada 3.",
+		"Menor intervalo entre pasos y ataques."
+	]
+	for i in range(3):
+		var y := 98 + i * 35
+		var selected := game.character_selection == i
+		if selected:
+			draw_rect(Rect2(58, y - 12, 314, 30), Color("303a44"))
+		label_at(Vector2(64, y), "[%d] %s  %d" % [i + 1, names[i], values[i]], GOLD if selected else TEXT, 10)
+		label_at(Vector2(76, y + 13), descriptions[i], MUTED, 8)
+
+	var backpack_y := 207
+	var backpack_selected := game.character_selection == 3
+	if backpack_selected:
+		draw_rect(Rect2(58, backpack_y - 12, 314, 27), Color("303a44"))
+	label_at(Vector2(64, backpack_y), "[B] MOCHILA  %d/%d" % [game.actor.inventory.capacity, DungeonInventory.MAX_CAPACITY], GOLD if backpack_selected else TEXT, 10)
+	label_at(Vector2(250, backpack_y), "Coste: %d monedas" % game.actor.backpack_cost(), MUTED, 8)
+	label_at(Vector2(60, 234), "↑↓ selecciona · ENTER mejora · clic mejora · C cierra", GOLD, 8)
+
+func character_click(p: Vector2) -> void:
+	for i in range(3):
+		var y := 98 + i * 35
+		if Rect2(58, y - 15, 314, 33).has_point(p):
+			game.character_selection = i
+			game.upgrade_selected()
+			return
+	if Rect2(58, 192, 314, 32).has_point(p):
+		game.character_selection = 3
+		game.upgrade_selected()
+
 func inventory_click(p: Vector2) -> void:
 	var inv: DungeonInventory = game.actor.inventory
 	if p.x >= 44 and p.x < 268 and p.y >= 73 and p.y < 209:
@@ -331,18 +376,19 @@ func draw_help() -> void:
 		"ESPACIO          Atacar de frente. Con pico: excavar (3 golpes).",
 		"X                Examinar alrededor: puertas secretas y trampas.",
 		"I                Mochila. ↑↓ objeto, Tab ranura, Enter equipar.",
+		"C                Atributos. Usa puntos de nivel para mejorarlos.",
 		"U / G            Consumir / soltar el objeto elegido (en mochila).",
 		"Q                Activar o desactivar autonomía tras 5 s sin jugar.",
 		"O / M            Minimapa / mapa completo.",
 		"F5 / Esc         Guardar / pausar. También se guarda al salir.",
 		"",
-		"Un casco en la mano golpea. En la cabeza protege.",
-		"El pico rompe cualquier muro y conecta salas y pasillos.",
+		"El hambre aumenta con el tiempo, al caminar y al combatir.",
+		"La comida reduce hambre aunque tengas la vida completa.",
+		"Solo regeneras descansando, bien alimentado, y muy lentamente.",
 		"Tu visión llega 6 tiles. Lo visto queda en la memoria del mapa.",
-		"La autonomía recorre lo conocido y se detiene si ve enemigos.",
-		"Los sectores continúan en todas direcciones. Cada partida es única."
+		"La autonomía se detiene si ve enemigos."
 	]
 	for i in range(lines.size()):
-		label_at(Vector2(42, 73 + i * 11), lines[i], MUTED if i >= 9 else TEXT, 9)
+		label_at(Vector2(42, 73 + i * 10), lines[i], MUTED if i >= 11 else TEXT, 8)
 	label_at(Vector2(42, 242), "[F1 / Esc] Volver a la expedición", GOLD, 9)
 
